@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -45,6 +46,9 @@ export default function RootLayout({
               </Button>
               <Button variant="ghost" asChild>
                 <Link href="/events">Events</Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link href="/tickets">My Tickets</Link>
               </Button>
             </nav>
           </div>
@@ -100,6 +104,7 @@ export default function RootLayout({
             </div>
           </div>
         </footer>
+        <Toaster />
       </body>
     </html>
   );

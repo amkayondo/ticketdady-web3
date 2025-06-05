@@ -1,19 +1,110 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { PlaceholderImage } from "@/components/ui/placeholder-image";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { WalletConnector } from "@/components/ui/wallet-connector";
 import { Event } from "@/lib/data";
+import { useToast } from "@/components/ui/use-toast";
 
 interface EventDetailProps {
   event: Event;
 }
 
 export function EventDetail({ event }: EventDetailProps) {
-  const { title, description, date, time, location, price, image, organizer, tickets } = event;
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+  
+  const { id, title, description, date, time, location, price, image, organizer, tickets } = event;
   const ticketPercentage = Math.round((tickets.sold / tickets.total) * 100);
   const ticketsRemaining = tickets.total - tickets.sold;
+  
+  const handleWalletConnected = (walletAddress: string) => {
+    setConnectedWallet(walletAddress);
+    setWalletModalOpen(false);
+    toast({
+      title: "Wallet Connected",
+      description: `Connected to ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`,
+    });
+  };
+
+  const handlePurchaseTicket = async () => {
+    console.log("Purchase button clicked"); // Debug log
+    
+    if (!connectedWallet) {
+      console.log("No wallet connected, opening modal"); // Debug log
+      setWalletModalOpen(true);
+      return;
+    }
+
+    console.log("Starting purchase process for wallet:", connectedWallet); // Debug log
+    setIsPurchasing(true);
+    
+    try {
+      // Simulate purchase process
+      console.log("Simulating purchase..."); // Debug log
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Generate ticket ID
+      const ticketId = `${id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      console.log("Generated ticket ID:", ticketId); // Debug log
+      
+      // Store purchase data in localStorage (in real app, this would be on blockchain/database)
+      const purchaseData = {
+        ticketId,
+        eventId: id,
+        eventTitle: title,
+        eventDate: date,
+        eventTime: time,
+        eventLocation: location,
+        purchasePrice: price,
+        walletAddress: connectedWallet,
+        purchaseDate: new Date().toISOString(),
+        transactionHash: `0x${Math.random().toString(16).substr(2, 64)}`, // Mock hash
+      };
+      
+      console.log("Purchase data:", purchaseData); // Debug log
+      
+      try {
+        localStorage.setItem(`ticket-${ticketId}`, JSON.stringify(purchaseData));
+        console.log("Stored in localStorage successfully"); // Debug log
+      } catch (storageError) {
+        console.error("LocalStorage error:", storageError);
+        throw new Error("Failed to save ticket data");
+      }
+      
+      toast({
+        title: "Purchase Successful!",
+        description: "Your ticket has been purchased successfully.",
+      });
+      
+      // Small delay before redirect
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log("Redirecting to:", `/tickets/${ticketId}`); // Debug log
+      
+      // Redirect to ticket page
+      router.push(`/tickets/${ticketId}`);
+      
+    } catch (error) {
+      console.error("Purchase error:", error); // Debug log
+      toast({
+        title: "Purchase Failed",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
   
   return (
     <div className="space-y-10 pb-20">
@@ -158,6 +249,20 @@ export function EventDetail({ event }: EventDetailProps) {
             </div>
             
             <CardContent className="p-6 space-y-6">
+              {connectedWallet && (
+                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center gap-2 text-green-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6 9 17l-5-5"/>
+                    </svg>
+                    <span className="text-sm font-medium">Wallet Connected</span>
+                  </div>
+                  <p className="text-xs text-green-600 mt-1">
+                    {connectedWallet.slice(0, 6)}...{connectedWallet.slice(-4)}
+                  </p>
+                </div>
+              )}
+              
               <div className="space-y-1.5">
                 <div className="flex justify-between text-sm">
                   <span>Ticket price</span>
@@ -170,28 +275,64 @@ export function EventDetail({ event }: EventDetailProps) {
                 <Separator className="my-2" />
                 <div className="flex justify-between font-medium">
                   <span>Total</span>
-                  <span>{price.replace('ETH', '')}1 ETH</span>
+                  <span>{parseFloat(price.replace(' ETH', '')) + 0.01} ETH</span>
                 </div>
               </div>
             </CardContent>
             
             <CardFooter className="px-6 pb-6 pt-0">
               <div className="w-full space-y-4">
-                <Button className="w-full" size="lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                    <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" />
-                    <path d="M20 12v4H6a2 2 0 0 0-2 2c0 1.1.9 2 2 2h12v-4" />
-                  </svg>
-                  Buy with Web3
+                <Button 
+                  className="w-full" 
+                  size="lg" 
+                  onClick={handlePurchaseTicket}
+                  disabled={isPurchasing}
+                >
+                  {isPurchasing ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : connectedWallet ? (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                        <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" />
+                        <path d="M20 12v4H6a2 2 0 0 0-2 2c0 1.1.9 2 2 2h12v-4" />
+                      </svg>
+                      Buy Ticket
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                        <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                        <path d="M14 10h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-2" />
+                        <path d="M6 10h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H6" />
+                        <path d="M6 10V6a2 2 0 0 1 2-2v0a2 2 0 0 1 2 2v4.01" />
+                      </svg>
+                      Connect Wallet
+                    </>
+                  )}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
-                  Secure checkout with Ethereum • Instant delivery
+                  {connectedWallet ? 
+                    "Secure checkout with Ethereum • Instant delivery" : 
+                    "Connect your wallet to purchase tickets"
+                  }
                 </p>
               </div>
             </CardFooter>
           </Card>
         </div>
       </div>
+      
+      <WalletConnector 
+        open={walletModalOpen} 
+        onOpenChange={setWalletModalOpen}
+        onWalletConnected={handleWalletConnected}
+      />
     </div>
   );
 }
