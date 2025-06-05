@@ -28,7 +28,6 @@ const WalletConnectModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
         <h3>Select a Wallet</h3>
         <button onClick={() => handleConnectWallet("metamask")}>MetaMask</button>
         <button onClick={() => handleConnectWallet("walletconnect")}>WalletConnect</button>
-        <button onClick={() => handleConnectWallet("lisk")}>Lisk Wallet</button>
         <button onClick={onClose}>Cancel</button>
       </div>
     </div>

@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { PlaceholderImage } from "@/components/ui/placeholder-image";
+
 import { Event } from "@/lib/data";
 
 interface EventCardProps {
@@ -26,9 +26,10 @@ export function EventCard({ event }: EventCardProps) {
 
       <CardHeader className="p-0 relative">
         <AspectRatio ratio={16 / 9}>
-          <PlaceholderImage
-            className="w-full h-full object-cover"
+          <img
+            src={image}
             alt={title}
+            className="w-full h-full object-cover"
           />
         </AspectRatio>
         <div className="absolute top-3 right-3 z-20">

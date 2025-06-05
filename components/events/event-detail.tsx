@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { PlaceholderImage } from "@/components/ui/placeholder-image";
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { WalletConnector } from "@/components/ui/wallet-connector";
 import { Event } from "@/lib/data";
@@ -20,19 +20,93 @@ export function EventDetail({ event }: EventDetailProps) {
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [userTicketsForEvent, setUserTicketsForEvent] = useState(0);
   const { toast } = useToast();
   const router = useRouter();
   
   const { id, title, description, date, time, location, price, image, organizer, tickets } = event;
   const ticketPercentage = Math.round((tickets.sold / tickets.total) * 100);
   const ticketsRemaining = tickets.total - tickets.sold;
+
+  // Check for existing wallet connection and count user tickets for this event
+  useEffect(() => {
+    const checkExistingConnection = async () => {
+      try {
+        // Check localStorage for saved wallet
+        const savedWallet = localStorage.getItem('connectedWallet');
+        if (savedWallet) {
+          console.log("Found saved wallet:", savedWallet);
+          setConnectedWallet(savedWallet);
+          
+          // Count tickets for this event and wallet
+          countUserTicketsForEvent(savedWallet);
+          return;
+        }
+
+        // Also check if MetaMask is still connected
+        if (window.ethereum && window.ethereum.selectedAddress) {
+          console.log("Found MetaMask connection:", window.ethereum.selectedAddress);
+          setConnectedWallet(window.ethereum.selectedAddress);
+          localStorage.setItem('connectedWallet', window.ethereum.selectedAddress);
+          
+          // Count tickets for this event and wallet
+          countUserTicketsForEvent(window.ethereum.selectedAddress);
+        }
+      } catch (error) {
+        console.error("Error checking wallet connection:", error);
+      }
+    };
+
+    checkExistingConnection();
+  }, [id]);
+
+  // Count how many tickets the user has bought for this specific event
+  const countUserTicketsForEvent = (walletAddress: string) => {
+    try {
+      let count = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('ticket-')) {
+          const ticketData = localStorage.getItem(key);
+          if (ticketData) {
+            const ticket = JSON.parse(ticketData);
+            if (ticket.eventId === id && ticket.walletAddress === walletAddress) {
+              count++;
+            }
+          }
+        }
+      }
+      setUserTicketsForEvent(count);
+      console.log(`User has ${count} tickets for event ${id}`);
+    } catch (error) {
+      console.error("Error counting user tickets:", error);
+    }
+  };
   
   const handleWalletConnected = (walletAddress: string) => {
+    console.log("Wallet connected:", walletAddress);
     setConnectedWallet(walletAddress);
     setWalletModalOpen(false);
+    
+    // Save wallet connection to localStorage
+    localStorage.setItem('connectedWallet', walletAddress);
+    
+    // Count tickets for this event
+    countUserTicketsForEvent(walletAddress);
+    
     toast({
       title: "Wallet Connected",
       description: `Connected to ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`,
+    });
+  };
+
+  const handleDisconnectWallet = () => {
+    setConnectedWallet(null);
+    setUserTicketsForEvent(0);
+    localStorage.removeItem('connectedWallet');
+    toast({
+      title: "Wallet Disconnected",
+      description: "Your wallet has been disconnected.",
     });
   };
 
@@ -76,6 +150,9 @@ export function EventDetail({ event }: EventDetailProps) {
       try {
         localStorage.setItem(`ticket-${ticketId}`, JSON.stringify(purchaseData));
         console.log("Stored in localStorage successfully"); // Debug log
+        
+        // Update ticket count for this event
+        setUserTicketsForEvent(prev => prev + 1);
       } catch (storageError) {
         console.error("LocalStorage error:", storageError);
         throw new Error("Failed to save ticket data");
@@ -110,9 +187,10 @@ export function EventDetail({ event }: EventDetailProps) {
     <div className="space-y-10 pb-20">
       {/* Hero section with large image and gradient overlay */}
       <div className="relative w-full h-[400px] sm:h-[500px] rounded-2xl overflow-hidden bg-black">
-        <PlaceholderImage 
+        <img 
+          src={image}
+          alt={title}
           className="w-full h-full object-cover opacity-90"
-          label={title}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         
@@ -250,16 +328,52 @@ export function EventDetail({ event }: EventDetailProps) {
             
             <CardContent className="p-6 space-y-6">
               {connectedWallet && (
-                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex items-center gap-2 text-green-800">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 6 9 17l-5-5"/>
-                    </svg>
-                    <span className="text-sm font-medium">Wallet Connected</span>
+                <div className="space-y-3">
+                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-green-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 6 9 17l-5-5"/>
+                        </svg>
+                        <span className="text-sm font-medium">Wallet Connected</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDisconnectWallet}
+                        className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 h-6 px-2"
+                      >
+                        Disconnect
+                      </Button>
+                    </div>
+                    <p className="text-xs text-green-600 mt-1">
+                      {connectedWallet.slice(0, 6)}...{connectedWallet.slice(-4)}
+                    </p>
                   </div>
-                  <p className="text-xs text-green-600 mt-1">
-                    {connectedWallet.slice(0, 6)}...{connectedWallet.slice(-4)}
-                  </p>
+                  
+                  {userTicketsForEvent > 0 && (
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-2 text-blue-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M2 9a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3"/>
+                          <path d="M2 9v10a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V9"/>
+                          <path d="M2 9l8.5 6a2 2 0 0 0 3 0L22 9"/>
+                          <path d="m7 6 5-5 5 5"/>
+                        </svg>
+                        <span className="text-sm font-medium">
+                          You own {userTicketsForEvent} ticket{userTicketsForEvent > 1 ? 's' : ''} for this event
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                        className="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-100 h-6 px-2 mt-1"
+                      >
+                        <Link href="/tickets">View My Tickets</Link>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
               
@@ -283,6 +397,7 @@ export function EventDetail({ event }: EventDetailProps) {
             <CardFooter className="px-6 pb-6 pt-0">
               <div className="w-full space-y-4">
                 <Button 
+                  type="button"
                   className="w-full" 
                   size="lg" 
                   onClick={handlePurchaseTicket}

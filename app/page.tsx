@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { PlaceholderImage } from "@/components/ui/placeholder-image";
+
 import { CalendarIcon, MapPinIcon, TrendingUpIcon, TicketIcon, UsersIcon } from "lucide-react";
 
 export default function Home() {
@@ -23,7 +23,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/70 to-primary/50 z-10" />
         <div className="relative z-20 flex flex-col items-center text-center py-20 px-6 text-white">
           <Badge className="mb-6 bg-white/20 text-white hover:bg-white/30 transition-colors">
-            Web3 Ticketing Platform
+            Ticket Daddy X - Web3 Ticketing Platform
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight">
             Discover and Attend <br className="hidden md:inline" />
@@ -42,12 +42,10 @@ export default function Home() {
           </div>
         </div>
         <div className="absolute inset-0 -z-10">
-          <Image 
-            src="/images/hero-bg.jpg" 
+          <img 
+            src="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1200&h=800&fit=crop&crop=center" 
             alt="Event background" 
-            fill 
-            className="object-cover opacity-30"
-            priority
+            className="w-full h-full object-cover opacity-30"
           />
         </div>
       </section>
@@ -135,11 +133,10 @@ export default function Home() {
               {upcomingEvents.map(event => (
                 <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="relative h-48">
-                    <PlaceholderImage 
+                    <img 
                       src={event.image} 
                       alt={event.title}
-                      fill
-                      className="object-cover"
+                      className="w-full h-full object-cover"
                     />
                     <div className="absolute top-2 right-2">
                       <Badge className="bg-primary/90">{event.category}</Badge>

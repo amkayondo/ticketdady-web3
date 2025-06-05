@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TicketDaddy - Web3 Event Ticketing",
-  description: "Buy and sell event tickets using Web3 technology",
+  title: "Ticket Daddy X - Web3 Event Ticketing",
+  description: "Buy and sell event tickets using Web3 technology on Ticket Daddy X",
 };
 
 export default function RootLayout({
@@ -38,7 +38,7 @@ export default function RootLayout({
                 <rect width="20" height="14" x="2" y="5" rx="2" />
                 <line x1="2" x2="22" y1="10" y2="10" />
               </svg>
-              TicketDaddy
+              Ticket Daddy X
             </Link>
             <nav className="flex gap-1">
               <Button variant="ghost" asChild>
@@ -60,7 +60,7 @@ export default function RootLayout({
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
               <div>
-                <h3 className="font-bold text-lg mb-4">TicketDaddy</h3>
+                <h3 className="font-bold text-lg mb-4">Ticket Daddy X</h3>
                 <p className="text-muted-foreground">The future of event ticketing on the blockchain.</p>
               </div>
               <div>
@@ -99,7 +99,7 @@ export default function RootLayout({
             </div>
             <Separator />
             <div className="pt-6 text-center text-sm text-muted-foreground">
-              <p>© 2025 TicketDaddy. All rights reserved.</p>
+              <p>© 2025 Ticket Daddy X. All rights reserved.</p>
               <p className="mt-1">Powered by Web3 technology</p>
             </div>
           </div>
